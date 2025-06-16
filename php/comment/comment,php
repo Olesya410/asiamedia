@@ -1,0 +1,32 @@
+<?php
+ob_start();
+// Функция для фильтрации комментариев
+function filterComment($comment) {
+    $badWords = ['ага', 'плохое_слово2']; // Замените на свои плохие слова
+    foreach ($badWords as $word) {
+        $comment = str_replace($word, str_repeat('*', strlen($word)), $comment);
+    }
+    return $comment;
+}
+// Проверка на отправку комментария
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_SESSION['users'])) {
+    $user = $_SESSION['users'];
+    $cardId = $_GET['id'];
+    $comment = filterComment(trim($_POST['comment']));
+    
+    if (!empty($comment)) {
+        $query = 'INSERT INTO comment (name, card_id, comment) VALUES (?, ?, ?)';
+        $dbResult = $db->prepare($query);
+        $dbResult->execute([$user['name'], $cardId, $comment]);
+        header("Location: " . $_SERVER['PHP_SELF'] . "?id=" . $cardId);
+        exit();
+    }
+    
+}
+// Загрузка комментариев под карточкой
+$cardId = $_GET['id']; // Получаем ID карточки из запроса
+$query = "SELECT * FROM comment WHERE card_id = '$cardId' ORDER BY id DESC";
+$dbResult = $db->query($query);
+$comment = $dbResult->fetchAll();
+$dbResult->closeCursor();
+?>
